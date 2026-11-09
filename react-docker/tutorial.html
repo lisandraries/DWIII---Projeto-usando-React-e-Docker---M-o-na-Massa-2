@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ambiente React + Vite com Docker Compose no Ubuntu 26.04 | IFSC</title>
+  <style>
+    :root {
+      /* Paleta Institucional IFSC */
+      --ifsc-green: #32a041;
+      --ifsc-green-dark: #1b5e20;
+      --ifsc-green-teal: #0f4c3a;
+      --ifsc-green-light: #e8f5e9;
+      --ifsc-red: #c8102e;
+      --ifsc-red-light: #fdecea;
+
+      /* Cores de Interface e Código */
+      --bg-page: #f4f7f5;
+      --bg-card: #ffffff;
+      --bg-code: #161b22;
+      --text-main: #263238;
+      --text-muted: #546e7a;
+      --border-color: #d8e2dc;
+      --radius-lg: 14px;
+      --radius-md: 8px;
+      --shadow: 0 4px 16px rgba(15, 76, 58, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Ubuntu, sans-serif;
+      background-color: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.65;
+      padding-bottom: 4rem;
+    }
+
+    /* Cabeçalho Padrão IFSC */
+    header {
+      background: linear-gradient(135deg, var(--ifsc-green-teal) 0%, var(--ifsc-green-dark) 60%, var(--ifsc-green) 100%);
+      color: #ffffff;
+      padding: 2.5rem 1.5rem;
+      border-bottom: 5px solid var(--ifsc-red);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    }
+
+    .header-container {
+      max-width: 960px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      gap: 1.75rem;
+      flex-wrap: wrap;
+    }
+
+    .ifsc-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      background: rgba(255, 255, 255, 0.95);
+      color: var(--ifsc-green-dark);
+      padding: 0.75rem 1.1rem;
+      border-radius: var(--radius-md);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      flex-shrink: 0;
+    }
+
+    .ifsc-brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.15;
+    }
+
+    .ifsc-brand-text strong {
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: #111;
+    }
+
+    .ifsc-brand-text span {
+      font-size: 0.8rem;
+      color: var(--ifsc-green);
+      font-weight: 600;
+    }
+
+    .header-title {
+      flex: 1;
+      min-width: 280px;
+    }
+
+    .badge-course {
+      display: inline-block;
+      background-color: rgba(255, 255, 255, 0.18);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      padding: 0.25rem 0.75rem;
+      border-radius: 999px;
+      margin-bottom: 0.6rem;
+      letter-spacing: 0.03em;
+    }
+
+    .header-title h1 {
+      font-size: 1.85rem;
+      font-weight: 700;
+      line-height: 1.25;
+      margin-bottom: 0.4rem;
+    }
+
+    .header-title p {
+      font-size: 1rem;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* Container Principal */
+    main {
+      max-width: 960px;
+      margin: 2rem auto 0;
+      padding: 0 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    /* Cards de Seção */
+    .section-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      padding: 2rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border-color);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .section-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 6px;
+      height: 100%;
+      background-color: var(--ifsc-green);
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid var(--ifsc-green-light);
+    }
+
+    .step-number {
+      background-color: var(--ifsc-green);
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 1rem;
+      width: 2.2rem;
+      height: 2.2rem;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    h2 {
+      font-size: 1.35rem;
+      color: var(--ifsc-green-teal);
+      font-weight: 700;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    /* Código inline */
+    code:not(pre code) {
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      background-color: var(--ifsc-green-light);
+      color: var(--ifsc-green-dark);
+      padding: 0.15rem 0.45rem;
+      border-radius: 5px;
+      font-size: 0.9em;
+      font-weight: 600;
+    }
+
+    /* Componente "</> Código na área" inspirado na apostila do IFSC */
+    .codigo-na-area {
+      border: 2px solid var(--ifsc-green);
+      border-radius: var(--radius-lg);
+      background-color: #ffffff;
+      padding: 1rem 1.25rem 1.25rem;
+      margin: 1.25rem 0;
+    }
+
+    .codigo-na-area-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.75rem;
+    }
+
+    .codigo-na-area-title {
+      color: var(--ifsc-green);
+      font-weight: 700;
+      font-size: 1.05rem;
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .codigo-na-area-title span.file-tag {
+      font-size: 0.8rem;
+      background: var(--ifsc-green-light);
+      color: var(--ifsc-green-dark);
+      padding: 0.15rem 0.55rem;
+      border-radius: 4px;
+      font-family: monospace;
+      margin-left: 0.4rem;
+    }
+
+    .copy-btn {
+      background-color: var(--ifsc-green-light);
+      color: var(--ifsc-green-dark);
+      border: 1px solid var(--ifsc-green);
+      border-radius: 6px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: var(--ifsc-green);
+      color: #ffffff;
+    }
+
+    pre {
+      background-color: var(--bg-code);
+      color: #e6edf3;
+      padding: 1.15rem 1.25rem;
+      border-radius: var(--radius-md);
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', Consolas, monospace;
+      font-size: 0.9rem;
+      line-height: 1.55;
+    }
+
+    pre .comment {
+      color: #8b949e;
+      font-style: italic;
+    }
+
+    /* Callouts / Destaques Didáticos */
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+
+    .info-box {
+      background-color: var(--ifsc-green-light);
+      border-left: 4px solid var(--ifsc-green-dark);
+      padding: 1rem 1.2rem;
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      font-size: 0.95rem;
+    }
+
+    .info-box.alert-red {
+      background-color: var(--ifsc-red-light);
+      border-left-color: var(--ifsc-red);
+    }
+
+    .info-box strong {
+      display: block;
+      color: var(--ifsc-green-teal);
+      margin-bottom: 0.35rem;
+    }
+
+    .info-box.alert-red strong {
+      color: var(--ifsc-red);
+    }
+
+    /* Lista de Passos Numerados (Estilo 01, 02 da apostila) */
+    .step-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+    }
+
+    .step-badge {
+      background-color: var(--ifsc-red);
+      color: #fff;
+      font-weight: 700;
+      font-size: 0.85rem;
+      padding: 0.25rem 0.55rem;
+      border-radius: 6px;
+      flex-shrink: 0;
+      margin-top: 0.15rem;
+    }
+
+    .step-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .note-text {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 0.4rem;
+    }
+
+    /* Tabela de Comandos */
+    .table-wrapper {
+      overflow-x: auto;
+      margin-top: 1rem;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-color);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 0.95rem;
+    }
+
+    thead {
+      background-color: var(--ifsc-green-teal);
+      color: #ffffff;
+    }
+
+    th,
+    td {
+      padding: 0.9rem 1.1rem;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tbody tr:nth-child(even) {
+      background-color: #f9fbf9;
+    }
+
+    tbody tr:hover {
+      background-color: var(--ifsc-green-light);
+    }
+
+    /* Rodapé */
+    footer {
+      max-width: 960px;
+      margin: 2.5rem auto 0;
+      padding: 0 1.5rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+
+    @media (max-width: 640px) {
+      .section-card {
+        padding: 1.35rem;
+      }
+
+      .header-title h1 {
+        font-size: 1.45rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="header-container">
+      <!-- Marca IFSC em SVG -->
+      <div class="ifsc-brand" aria-label="Instituto Federal de Santa Catarina">
+        <svg width="34" height="44" viewBox="0 0 34 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="5.5" cy="5.5" r="5.5" fill="#C8102E" />
+          <rect x="13" y="0" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="24.5" y="0" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="0.75" y="11.5" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="13" y="11.5" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="0.75" y="23" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="13" y="23" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="24.5" y="23" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="0.75" y="34.5" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+          <rect x="13" y="34.5" width="9.5" height="9.5" rx="1.5" fill="#32A041" />
+        </svg>
+        <div class="ifsc-brand-text">
+          <strong>Instituto Federal</strong>
+          <span>Santa Catarina</span>
+        </div>
+      </div>
+
+      <div class="header-title">
+        <span class="badge-course">Guia Prático de Laboratório • Desenvolvimento Web</span>
+        <h1>Ambiente React + Vite com Docker Compose no Ubuntu 26.04 e derivados</h1>
+        <p>Configuração completa para executar os exemplos práticos sem instalar o Node.js no sistema hospedeiro.</p>
+        <p>Professor Lucas Bueno</p>
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Introdução -->
+    <section class="section-card">
+      <p>
+        Para executar os exemplos de <strong>React + Vite</strong> em um container no <strong>Ubuntu 26.04 e
+          derivados</strong>
+        mantendo o sistema hospedeiro limpo, a configuração do Docker Compose precisa resolver dois detalhes
+        fundamentais:
+      </p>
+      <div class="info-grid">
+        <div class="info-box">
+          <strong>1. Permissões de Usuário (UID 1000)</strong>
+          Mapear o usuário local do Ubuntu (<code>1000:1000</code>) para evitar que os arquivos gerados pelo Vite
+          fiquem bloqueados como <code>root</code> ao editar no VS Code.
+        </div>
+        <div class="info-box alert-red">
+          <strong>2. Exposição de Rede (--host)</strong>
+          Ativar a flag <code>--host</code> no servidor do Vite para expor a porta <code>5173</code> para fora do
+          container e permitir o acesso pelo navegador local.
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 1 -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-number">1</span>
+        <h2>Estrutura de Diretórios e <code>compose.yaml</code></h2>
+      </div>
+
+      <p>
+        Crie a pasta do projeto no Ubuntu <strong>antes</strong> de subir o container para garantir que o diretório
+        <code>meu-projeto</code> pertença ao seu usuário local e não ao <code>root</code> do daemon do Docker:
+      </p>
+
+      <div class="codigo-na-area">
+        <div class="codigo-na-area-header">
+          <div class="codigo-na-area-title">
+            &lt;/&gt; Código na área <span class="file-tag">Terminal (Bash)</span>
+          </div>
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        </div>
+        <pre><code>mkdir -p ~/dev-react/meu-projeto
+cd ~/dev-react</code></pre>
+      </div>
+
+      <p>
+        Na pasta <code>~/dev-react</code> (um nível acima de <code>meu-projeto</code>), crie o arquivo
+        <code>compose.yaml</code>:
+      </p>
+
+      <div class="codigo-na-area">
+        <div class="codigo-na-area-header">
+          <div class="codigo-na-area-title">
+            &lt;/&gt; Código na área <span class="file-tag">~/dev-react/compose.yaml</span>
+          </div>
+          <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+        </div>
+        <pre><code>services:
+  react-dev:
+    image: node:22-alpine
+    container_name: vite_react_dev
+    <span class="comment"># Mapeia o usuário padrão do Ubuntu (1000:1000) para evitar arquivos criados como root</span>
+    user: "1000:1000"
+    working_dir: /app
+    volumes:
+      - ./meu-projeto:/app
+    ports:
+      - "5173:5173"
+    <span class="comment"># O '-- --host' instrui o Vite a escutar em 0.0.0.0 dentro do container</span>
+    command: npm run dev -- --host
+    stdin_open: true
+    tty: true</code></pre>
+      </div>
+
+      <div class="info-grid">
+        <div class="info-box">
+          <strong>Por que deixar o <code>compose.yaml</code> um nível acima?</strong>
+          Isso mantém a pasta <code>meu-projeto</code> limpa e idêntica à árvore de arquivos do material
+          (<code>public</code>, <code>src</code>, <code>.gitignore</code>, <code>eslint.config.js</code>,
+          <code>index.html</code>, <code>package.json</code>, <code>README.md</code> e <code>vite.config.js</code>),
+          além de permitir que o comando de criação do Vite rode sem reclamar que a pasta não está vazia.
+        </div>
+        <div class="info-box">
+          <strong>Por que usar <code>-- --host</code>?</strong>
+          Por padrão, o <code>npm run dev</code> atrela o servidor apenas ao <code>localhost</code>
+          (<code>127.0.0.1</code>) interno do container. Passar <code>--host</code> libera o acesso para o navegador do
+          seu Ubuntu via <code>http://localhost:5173/</code>.
+        </div>
+      </div>
+    </section>
+
+    <!-- Seção 2 -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-number">2</span>
+        <h2>Criando o Projeto Vite pelo Container</h2>
+      </div>
+
+      <p>
+        Ainda dentro de <code>~/dev-react</code>, utilize o <code>docker compose run</code> como demonstrado a seguir
+        para executar os comandos de
+        criação do projeto e instalação das dependências diretamente no container efêmero:
+      </p>
+
+      <ul class="step-list">
+        <li class="step-item">
+          <span class="step-badge">01</span>
+          <div class="step-content">
+            <strong>Gerar a estrutura do projeto React com Vite:</strong>
+            <div class="codigo-na-area">
+              <div class="codigo-na-area-header">
+                <div class="codigo-na-area-title">&lt;/&gt; Código na área</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+              </div>
+              <pre><code>docker compose run --rm react-dev npm create vite@latest . -- --template react</code></pre>
+            </div>
+            <p class="note-text">
+              <em>Nota:</em> usamos o ponto <code>.</code> no lugar de <code>meu-projeto</code> porque o diretório de
+              trabalho <code>/app</code> do container já está mapeado diretamente dentro da pasta
+              <code>./meu-projeto</code>. Caso o assistente do Vite faça alguma pergunta interativa no terminal para
+              iniciar o projeto ou serviço,
+              selecione <code>No</code>, neste momento queremos apenas a criação dos arquivos.
+            </p>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <span class="step-badge">02</span>
+          <div class="step-content">
+            <strong>Instalar as dependências iniciais (gerando a pasta <code>node_modules</code>):</strong>
+            <div class="codigo-na-area">
+              <div class="codigo-na-area-header">
+                <div class="codigo-na-area-title">&lt;/&gt; Código na área</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+              </div>
+              <pre><code>docker compose run --rm react-dev npm install</code></pre>
+            </div>
+            <p class="note-text">
+              Esse passo lê o <code>package.json</code> recém-criado e popula a pasta <code>node_modules</code>
+              localmente com as permissões do seu usuário.
+            </p>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <!-- Seção 3 -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-number">3</span>
+        <h2>Executando a Aplicação e Editando no VS Code</h2>
+      </div>
+
+      <p>Com o projeto instalado, inicie o ambiente e abra o editor no Ubuntu:</p>
+
+      <ul class="step-list">
+        <li class="step-item">
+          <span class="step-badge">01</span>
+          <div class="step-content">
+            <strong>Suba o servidor de desenvolvimento em segundo plano:</strong>
+            <div class="codigo-na-area">
+              <div class="codigo-na-area-header">
+                <div class="codigo-na-area-title">&lt;/&gt; Código na área</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+              </div>
+              <pre><code>docker compose up -d</code></pre>
+            </div>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <span class="step-badge">02</span>
+          <div class="step-content">
+            <strong>Acompanhe os logs (opcional) para ver a saída do Vite:</strong>
+            <div class="codigo-na-area">
+              <div class="codigo-na-area-header">
+                <div class="codigo-na-area-title">&lt;/&gt; Código na área</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+              </div>
+              <pre><code>docker compose logs -f</code></pre>
+            </div>
+            <p class="note-text">
+              Você verá a confirmação do servidor rodando e pronto para uso em <code>http://localhost:5173/</code>.
+            </p>
+          </div>
+        </li>
+
+        <li class="step-item">
+          <span class="step-badge">03</span>
+          <div class="step-content">
+            <strong>Abra a pasta do projeto no VS Code instalado no Ubuntu:</strong>
+            <div class="codigo-na-area">
+              <div class="codigo-na-area-header">
+                <div class="codigo-na-area-title">&lt;/&gt; Código na área</div>
+                <button class="copy-btn" onclick="copyCode(this)">Copiar</button>
+              </div>
+              <pre><code>code meu-projeto</code></pre>
+            </div>
+          </div>
+        </li>
+      </ul>
+
+      <div class="info-box" style="margin-top: 1.5rem;">
+        <strong>Atualização em Tempo Real (HMR Nativo)</strong>
+        Como o Docker no Linux utiliza o compartilhamento nativo de sistema de arquivos do kernel
+        (<code>inotify</code>), o <strong>HMR (Hot Module Replacement)</strong> funciona instantaneamente: qualquer
+        alteração salva pelo VS Code em <code>src/App.jsx</code> ou nos novos componentes (como
+        <code>src/componentes/PainelProduto/index.jsx</code>) atualizará a página no navegador em tempo real.
+      </div>
+    </section>
+
+    <!-- Seção 4 -->
+    <section class="section-card">
+      <div class="section-header">
+        <span class="step-number">4</span>
+        <h2>Comandos do Dia a Dia para os Exercícios do Material</h2>
+      </div>
+
+      <p>
+        Sempre que o material pedir para executar um comando <code>npm</code> no terminal, basta dispará-lo através do
+        container em execução (ou usando <code>run --rm</code> se o container estiver parado):
+      </p>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Tarefa no Material</th>
+              <th>Comando Equivalente com Docker Compose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Iniciar o servidor (<code>npm run dev</code>)</strong></td>
+              <td><code>docker compose up -d</code></td>
+            </tr>
+            <tr>
+              <td><strong>Parar o servidor</strong></td>
+              <td><code>docker compose down</code></td>
+            </tr>
+            <tr>
+              <td><strong>Instalar o Axios (<code>npm install axios</code>)</strong></td>
+              <td><code>docker compose exec react-dev npm install axios</code></td>
+            </tr>
+            <tr>
+              <td><strong>Recriar a <code>node_modules</code> em caso de problemas</strong></td>
+              <td><code>rm -rf meu-projeto/node_modules &amp;&amp; docker compose run --rm react-dev npm install</code>
+              </td>
+            </tr>
+            <tr>
+              <td><strong>Abrir um shell interativo dentro do container</strong></td>
+              <td><code>docker compose exec react-dev sh</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    Instituto Federal de Santa Catarina (IFSC) • Material de Apoio ao Desenvolvimento Web com React e Vite
+  </footer>
+
+  <script>
+    function copyCode(button) {
+      const pre = button.closest('.codigo-na-area').querySelector('pre');
+      const text = pre.innerText;
+      navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.innerText;
+        button.innerText = 'Copiado!';
+        button.style.backgroundColor = '#32a041';
+        button.style.color = '#ffffff';
+        setTimeout(() => {
+          button.innerText = originalText;
+          button.style.backgroundColor = '';
+          button.style.color = '';
+        }, 1800);
+      });
+    }
+  </script>
+</body>
+
+</html>
